@@ -1,0 +1,20 @@
+{
+  "name": "pridebot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/bot.js",
+  "scripts": {
+    "test": "node ."
+  },
+  "keywords": [],
+  "author": "Bitslayn",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/rest": "^2.0.0",
+    "@napi-rs/canvas": "^0.1.51",
+    "canvas": "^2.11.2",
+    "discord-api-types": "^0.37.71",
+    "discord.js": "^14.12.1",
+    "dotenv": "^16.4.5"
+  }
+}
