@@ -4,7 +4,9 @@ module.exports = (client) => {
   client.handleComponents = async () => {
     const componentFolders = readdirSync('./src/components');
     for (const folder of componentFolders) {
-      const componentFiles = readdirSync(`./src/components/${folder}`).filter((file) => file.endsWith('.js'));
+      const componentFiles = readdirSync(`./src/components/${folder}`).filter(
+        (file) => file.endsWith('.js')
+      );
 
       const { buttons, selectMenus } = client;
 
@@ -27,5 +29,5 @@ module.exports = (client) => {
           break;
       }
     }
-  }
-}
+  };
+};

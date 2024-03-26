@@ -7,4 +7,4 @@ module.exports = {
       content: `Meow ${interaction.values[0]}`
     });
   }
-}
+};
