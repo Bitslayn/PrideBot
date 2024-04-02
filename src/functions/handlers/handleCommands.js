@@ -1,43 +1,40 @@
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
-const { token, clientId, guildId } = process.env;
 const fs = require('fs');
+
+const clientId = '1212936250580009010';
 
 module.exports = (client) => {
   client.handleCommands = async () => {
     const commandFolders = fs.readdirSync('./src/commands');
-    for (const folder of commandFolders) {
+    client.commandArray = [];
+    for (folder of commandFolders) {
       const commandFiles = fs
         .readdirSync(`./src/commands/${folder}`)
         .filter((file) => file.endsWith('.js'));
-
-      const { commands, commandArray } = client;
       for (const file of commandFiles) {
         const command = require(`../../commands/${folder}/${file}`);
-        commands.set(command.data.name, command);
-        commandArray.push(command.data.toJSON());
+        client.commands.set(command.data.name, command);
+        client.commandArray.push(command.data.toJSON());
       }
     }
 
-    const rest = new REST().setToken(token);
-    try {
-      console.log('Unregistering existing commands...');
+    const rest = new REST({
+      version: '9'
+    }).setToken(process.env.token);
 
-      await rest
-        .put(Routes.applicationGuildCommands(clientId, guildId), { body: [] })
-        .then(() => console.log('Successfully deleted all guild commands.'))
-        .catch(console.error);
-      await rest.put(Routes.applicationCommands(clientId), { body: [] });
+    (async () => {
+      try {
+        console.log('Refreshing & Deleting');
 
-      console.log('Fetching application commands...');
+        await rest.put(Routes.applicationCommands(clientId), {
+          body: client.commandArray
+        });
 
-      // await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-      //   body: client.commandArray
-      // });
-
-      console.log('Success!');
-    } catch (error) {
-      console.error(error);
-    }
+        console.log('Success!');
+      } catch (error) {
+        console.error(error);
+      }
+    })();
   };
 };
