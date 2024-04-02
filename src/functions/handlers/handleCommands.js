@@ -1,6 +1,6 @@
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
-const { clientId, guildId } = process.env;
+const { token, clientId, guildId } = process.env;
 const fs = require('fs');
 
 module.exports = (client) => {
@@ -19,13 +19,21 @@ module.exports = (client) => {
       }
     }
 
-    const rest = new REST().setToken(process.env.token);
+    const rest = new REST().setToken(token);
     try {
+      console.log('Unregistering existing commands...');
+
+      await rest
+        .put(Routes.applicationGuildCommands(clientId, guildId), { body: [] })
+        .then(() => console.log('Successfully deleted all guild commands.'))
+        .catch(console.error);
+      await rest.put(Routes.applicationCommands(clientId), { body: [] });
+
       console.log('Fetching application commands...');
 
-      await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-        body: client.commandArray
-      });
+      // await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+      //   body: client.commandArray
+      // });
 
       console.log('Success!');
     } catch (error) {
