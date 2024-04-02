@@ -16,18 +16,9 @@ const Canvas = require('@napi-rs/canvas');
 
 module.exports = {
   data: new ContextMenuCommandBuilder()
-    .setName('flag')
+    .setName('Create prideflag emoji')
     .setType(ApplicationCommandType.Message),
-  async execute(interaction, client) {
-    /*const canvas = createCanvas(512, 512);
-     const context = canvas.getContext('2d');
-
-     const flag = new Image();
-     Image.src = interaction.attachments.array()[0].url
-     */
-    const img = `${Array.from(interaction.targetMessage.attachments.values()).map(({ url }) => url)}`;
-    console.log(img, img.length);
-
+  async execute(interaction) {
     // Selection menu component
     const menuSelection = new StringSelectMenuBuilder()
       .setCustomId('menuSelection')
@@ -36,28 +27,28 @@ module.exports = {
       .setMaxValues(1)
       .setOptions(
         new StringSelectMenuOptionBuilder({
-          label: '⬤ Centered (Default)',
+          label: 'Center (Default)',
           description: 'Wide flags will be cropped along either side',
           value: 'center'
         }),
         new StringSelectMenuOptionBuilder({
-          label: '[◖ Left',
+          label: 'Left',
           description:
             'Keeps the left side of wide flags, cropping out the right',
           value: 'left'
         }),
         new StringSelectMenuOptionBuilder({
-          label: '◗] Right',
+          label: 'Right',
           description:
             'Keeps the right side of wide flags, cropping out the left',
           value: 'right'
-        }),
+        }) /*,
         new StringSelectMenuOptionBuilder({
           label: '[⬮] Stretch',
           description:
             '(Not recommended) Resizes wide flags to fit the template',
           value: 'stretch'
-        })
+        })*/
       );
 
     // Emoji shape menu component
@@ -140,23 +131,46 @@ module.exports = {
       .setLabel('Next 🡆')
       .setStyle(ButtonStyle.Primary);
 
+    // Edit flag emoji
+    const attachment = Array.from(
+      interaction.targetMessage.attachments.values()
+    );
+
+    const scale = 512;
+    const height = scale * 0.72265625;
+    const width =
+      (370 * attachment.map(({ width }) => width).toString()) /
+      attachment.map(({ height }) => height).toString();
+    const crop = '-1';
+    const dx = ((width - scale) / 2) * crop;
+    const dy = (scale - height) / 2;
+
+    const canvas = Canvas.createCanvas(scale, scale);
+    const context = canvas.getContext('2d');
+    const mask = await Canvas.loadImage('./src/masks/flag.png');
+    context.drawImage(mask, 0, 0);
+    context.globalCompositeOperation = 'source-in';
+    const flag = await Canvas.loadImage(
+      attachment.map(({ url }) => url).toString()
+    );
+    context.drawImage(flag, dx, dy, width, height);
+
+    const output = new AttachmentBuilder(await canvas.encode('png'), {
+      name: attachment.map(({ name }) => name).toString()
+    });
+
     // Response builder
-    if (img.length != 0) {
-      await interaction.reply({
-        content: img[0],
-        components: [
-          new ActionRowBuilder().addComponents(menuSelection),
-          //new ActionRowBuilder().addComponents(menuShape),
-          new ActionRowBuilder().addComponents(
-            /*buttonPreview, buttonRevert,*/ buttonConvert,
-            buttonCancel
-          )
-          //new ActionRowBuilder().addComponents(buttonPrevious, buttonNext)
-        ]
-      });
-    } else {
-      interaction.reply({ content: '.', ephemeral: true });
-      interaction.deleteReply();
-    }
+    await interaction.reply({
+      files: [output],
+      components: [
+        new ActionRowBuilder().addComponents(menuSelection),
+        //new ActionRowBuilder().addComponents(menuShape),
+        new ActionRowBuilder().addComponents(
+          /*buttonPreview, buttonRevert,*/ buttonConvert,
+          buttonCancel
+        )
+        //new ActionRowBuilder().addComponents(buttonPrevious, buttonNext)
+      ]
+    });
   }
 };

@@ -14,7 +14,7 @@
     "@napi-rs/canvas": "^0.1.51",
     "canvas": "^2.11.2",
     "discord-api-types": "^0.37.71",
-    "discord.js": "^14.12.1",
+    "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
     "prettier": "^3.2.5"
   },
