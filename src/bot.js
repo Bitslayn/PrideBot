@@ -11,7 +11,7 @@ client.commands = new Collection();
 client.buttons = new Collection();
 client.selectMenus = new Collection();
 client.commandArray = [];
-client.color = 0xef7627;
+client.color = 0x2b2d31;
 
 const functionFolders = fs.readdirSync('./src/functions');
 for (const folder of functionFolders) {
