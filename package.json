@@ -1,11 +1,8 @@
 {
   "name": "pridebot",
   "version": "1.0.0",
-  "description": "",
   "main": "src/bot.js",
-  "scripts": {
-    "test": "node ."
-  },
+  "start": "node ./src/bot.js",
   "keywords": [],
   "author": "Bitslayn",
   "license": "ISC",
@@ -20,5 +17,17 @@
   },
   "devDependencies": {
     "prettier-plugin-java": "^2.6.0"
-  }
+  },
+  "scripts": {
+    "test": "node ./src/bot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bitslayn/PrideBot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Bitslayn/PrideBot/issues"
+  },
+  "homepage": "https://github.com/Bitslayn/PrideBot#readme",
+  "description": ""
 }
