@@ -2,8 +2,6 @@ const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
 
-const clientId = '1212936250580009010';
-
 module.exports = (client) => {
   client.handleCommands = async () => {
     const commandFolders = fs.readdirSync('./src/commands');
@@ -27,7 +25,7 @@ module.exports = (client) => {
       try {
         console.log('Refreshing & Deleting');
 
-        await rest.put(Routes.applicationCommands(clientId), {
+        await rest.put(Routes.applicationCommands(process.env.clientId), {
           body: client.commandArray
         });
 
