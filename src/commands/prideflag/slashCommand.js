@@ -54,7 +54,7 @@ module.exports = {
     if (interaction.options.getSubcommand() === 'create') {
       const attachment = interaction.options.getAttachment('attachment') ?? interaction.options.getString('url');
       const crop = interaction.options.getString('crop') ?? '-1';
-      const send = !interaction.options.getBoolean('send') ?? false;
+      const send = !(interaction.options.getBoolean('send') ?? true);
 
       console.log(`${attachment.url}`);
 
