@@ -28,11 +28,11 @@ module.exports = {
           option
             .setName('attachment')
             .setDescription('Attach an image to create an emoji from')
-            .setRequired(false)
+            .setRequired(true)
         )
-        .addStringOption((option) =>
+        /*.addStringOption((option) =>
           option.setName('url').setDescription('The url of the prideflag image')
-        )
+        )*/
         .addStringOption((option) =>
           option
             .setName('crop')
