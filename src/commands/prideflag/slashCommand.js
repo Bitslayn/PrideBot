@@ -60,13 +60,10 @@ module.exports = {
 
       const scale = 512;
       const height = scale * 0.72265625;
-      let width;
-  
-      if (crop === '0full') {
-        width = 512;
-      } else {
-        width = Math.min(512, (370 * attachment.width) / attachment.height);
-      }
+      const width =
+        crop !== '0full' ?
+          (370 * attachment.width) / attachment.height
+        : Math.min(512, (370 * attachment.width) / attachment.height);
   
       const dx = ((width - scale) / 2) * parseInt(crop);
       const dy = (scale - height) / 2;
