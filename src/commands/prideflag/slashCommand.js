@@ -28,6 +28,7 @@ module.exports = {
           option
             .setName('attachment')
             .setDescription('Attach an image to create an emoji from')
+            .setRequired(false)
         )
         /*.addStringOption((option) =>
           option.setName('url').setDescription('The url of the prideflag image')
@@ -80,7 +81,7 @@ module.exports = {
 
       if (attachment) {
         await interaction.reply({ files: [output], ephemeral: send });
-        } else {
+      } else {
         await interaction.reply({
           content:
             'Please attach an image or link',
