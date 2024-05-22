@@ -28,7 +28,7 @@ module.exports = {
           option
             .setName('attachment')
             .setDescription('Attach an image to create an emoji from')
-            .setRequired(true)
+            .setRequired(false)
         )
         /*.addStringOption((option) =>
           option.setName('url').setDescription('The url of the prideflag image')
@@ -58,12 +58,12 @@ module.exports = {
 
       console.log(`${attachment.url}`);
 
-      const scale = 512;
-      const height = scale * 0.72265625;
+      const scale = 512;                 //   width = 512
+      const height = scale * 0.72265625; //   height = 370
       const width =
         crop !== '0full' ?
-          (370 * attachment.width) / attachment.height
-        : Math.min(512, (370 * attachment.width) / attachment.height);
+          (height * attachment.width) / attachment.height
+        : Math.min(scale, (height * attachment.width) / attachment.height);
   
       const dx = ((width - scale) / 2) * parseInt(crop);
       const dy = (scale - height) / 2;
@@ -81,7 +81,7 @@ module.exports = {
 
       if (attachment) {
         await interaction.reply({ files: [output], ephemeral: send });
-      } else {
+        } else {
         await interaction.reply({
           content:
             'Please attach an image or link',
