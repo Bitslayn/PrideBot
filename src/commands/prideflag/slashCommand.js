@@ -28,7 +28,6 @@ module.exports = {
           option
             .setName('attachment')
             .setDescription('Attach an image to create an emoji from')
-            .setRequired(false)
         )
         /*.addStringOption((option) =>
           option.setName('url').setDescription('The url of the prideflag image')
