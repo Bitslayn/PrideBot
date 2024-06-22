@@ -52,19 +52,28 @@ module.exports = {
     ),
   async execute(interaction, client) {
     if (interaction.options.getSubcommand() === 'create') {
-      const attachment = interaction.options.getAttachment('attachment') ?? interaction.options.getString('url');
+      const attachment =
+        interaction.options.getAttachment('attachment') ??
+        interaction.options.getString('url');
       const crop = interaction.options.getString('crop') ?? '-1';
       const send = !(interaction.options.getBoolean('send') ?? true);
 
       console.log(`${attachment.url}`);
 
-      const scale = 512;                 //   width = 512
+      const scale = 512; //   width = 512
       const height = scale * 0.72265625; //   height = 370
-      const width =
-        crop !== '0full' ?
-          (height * attachment.width) / attachment.height
-        : Math.min(scale, (height * attachment.width) / attachment.height);
-  
+      function width() {
+        if (crop == '0full') {
+          if (attachment.width > scale) {
+            return Math.min(scale, (height * attachment.width) / attachment.height);
+          } else {
+            return scale;
+          }
+        } else {
+          return (height * attachment.width) / attachment.height;
+        }
+      }
+
       const dx = ((width - scale) / 2) * parseInt(crop);
       const dy = (scale - height) / 2;
 
@@ -83,8 +92,7 @@ module.exports = {
         await interaction.reply({ files: [output], ephemeral: send });
       } else {
         await interaction.reply({
-          content:
-            'Please attach an image or link',
+          content: 'Please attach an image or link',
           ephemeral: send
         });
       }
