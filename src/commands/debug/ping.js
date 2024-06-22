@@ -7,7 +7,7 @@ module.exports = {
       fetchReply: true
     });
 
-    const newMessage = `Ping: ${message.createdTimestamp - interaction.createdTimestamp}`;
+    const newMessage = `Pong! ${message.createdTimestamp - interaction.createdTimestamp}`;
 
     await interaction.editReply({
       content: newMessage
