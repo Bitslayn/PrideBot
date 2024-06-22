@@ -62,18 +62,15 @@ module.exports = {
 
       const scale = 512; //   width = 512
       const height = scale * 0.72265625; //   height = 370
-      function width() {
+      let width;
+      function findWidth() {
         if (crop == '0full') {
-          if (attachment.width > scale) {
-            return Math.min(scale, (height * attachment.width) / attachment.height);
-          } else {
-            return scale;
-          }
+          return scale;
         } else {
           return (height * attachment.width) / attachment.height;
         }
       }
-
+      width = findWidth();
       const dx = ((width - scale) / 2) * parseInt(crop);
       const dy = (scale - height) / 2;
 
