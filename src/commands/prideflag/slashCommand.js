@@ -86,7 +86,11 @@ module.exports = {
       });
 
       if (attachment || url) {
-        await interaction.reply({ files: [output], ephemeral: send });
+        if (width < scale) {
+          await interaction.reply({ files: [output], content: '-# Try adding **crop: stretch** if the flag looks weird', ephemeral: send });
+        } else {
+          await interaction.reply({ files: [output], ephemeral: send });
+        }
       } else {
         await interaction.reply({
           content: 'Please attach an image or link',
