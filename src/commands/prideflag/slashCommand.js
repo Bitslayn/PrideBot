@@ -87,7 +87,7 @@ module.exports = {
 
       if (attachment || url) {
         if (width < scale) {
-          await interaction.reply({ files: [output], content: '-# Try adding **crop: stretch** if the flag looks weird', ephemeral: send });
+          await interaction.reply({ files: [output], content: '-# Try adding **crop: Stretch** if the flag looks weird', ephemeral: send });
         } else {
           await interaction.reply({ files: [output], ephemeral: send });
         }
