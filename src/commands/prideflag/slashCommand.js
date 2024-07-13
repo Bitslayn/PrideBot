@@ -13,21 +13,23 @@ const {
   UserContextMenuCommandInteraction,
   Message,
   MessageCollector
-} = require('discord.js');
-const Canvas = require('@napi-rs/canvas');
+} = require("discord.js");
+const CanvasAPI = require("@napi-rs/canvas");
+const { convertImageToFlag } = require("./shapes/flag");
+const { stretchImageAlongCurve } = require("./shapes/rainbow");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('prideflag')
-    .setDescription('Prideflag commands for this bot')
+    .setName("prideflag")
+    .setDescription("Prideflag commands for this bot")
     .addSubcommand((subcommand) =>
       subcommand
-        .setName('create')
-        .setDescription('Create a prideflag emoji from an attachment')
+        .setName("create")
+        .setDescription("Create a prideflag emoji from an attachment")
         .addAttachmentOption((option) =>
           option
-            .setName('attachment')
-            .setDescription('Attach an image to create an emoji from')
+            .setName("attachment")
+            .setDescription("Attach an image to create an emoji from")
             .setRequired(true)
         )
         /*.addStringOption((option) =>
@@ -35,67 +37,76 @@ module.exports = {
         )*/
         .addStringOption((option) =>
           option
-            .setName('crop')
-            .setDescription('Configure how prideflags will be cropped')
+            .setName("crop")
+            .setDescription("Configure how prideflags will be cropped")
             .addChoices(
-              { name: 'Center (Default)', value: '-1' },
-              { name: 'Left', value: '0' },
-              { name: 'Right', value: '-2' },
-              { name: 'Stretch', value: '0full' }
+              { name: "Center (Default)", value: "-1" },
+              { name: "Left", value: "0" },
+              { name: "Right", value: "-2" },
+              { name: "Stretch", value: "0full" }
+            )
+        )
+        .addStringOption((option) =>
+          option
+            .setName("shape")
+            .setDescription("Which shape should the flag be?")
+            .addChoices(
+              { name: "Flag (Default)", value: "flag" },
+              { name: "Rainbow", value: "rainbow" }
             )
         )
         .addBooleanOption((option) =>
           option
-            .setName('send')
+            .setName("send")
             .setDescription("Should the bot's response be visible to everyone?")
         )
     ),
-  async execute(interaction, client) {
-    if (interaction.options.getSubcommand() === 'create') {
-      const attachment =
-        interaction.options.getAttachment('attachment') ??
-        interaction.options.getString('url');
-      const crop = interaction.options.getString('crop') ?? '-1';
-      const send = !(interaction.options.getBoolean('send') ?? true);
 
+  async execute(interaction, client) {
+    if (interaction.options.getSubcommand() === "create") {
+      const attachment =
+        interaction.options.getAttachment("attachment") ??
+        interaction.options.getString("url");
       console.log(`${attachment.url}`);
 
-      const scale = 512; //   width = 512
-      const height = scale * 0.72265625; //   height = 370
-      let width;
-      function findWidth() {
-        if (crop == '0full') {
-          return scale;
-        } else {
-          return (height * attachment.width) / attachment.height;
-        }
-      }
-      width = findWidth();
-      const dx = ((width - scale) / 2) * parseInt(crop);
-      const dy = (scale - height) / 2;
+      const crop = interaction.options.getString("crop") ?? "-1";
+      const scale = 512;
 
-      const canvas = Canvas.createCanvas(scale, scale);
-      const context = canvas.getContext('2d');
-      const mask = await Canvas.loadImage('./src/masks/flag.png');
-      context.drawImage(mask, 0, 0);
-      context.globalCompositeOperation = 'source-in';
-      const flag = await Canvas.loadImage(attachment.url);
-      context.drawImage(flag, dx, dy, width, height);
-      const output = new AttachmentBuilder(await canvas.encode('png'), {
-        name: attachment.name
-      });
+      const shape = interaction.options.getString("shape");
+      const send = !(interaction.options.getBoolean("send") ?? true);
+      
+      try {
+        let canvas;
 
-      if (attachment || url) {
-        if (width < scale) {
-          await interaction.reply({ files: [output], content: '-# Try adding **crop: Stretch** if the flag looks weird', ephemeral: send });
-        } else {
-          await interaction.reply({ files: [output], ephemeral: send });
+        if (shape == "flag") {
+          canvas = convertImageToFlag(attachment.url, scale, crop);
+        } else if (shape == "rainbow") {
+          canvas = stretchImageAlongCurve(attachment.url, scale, scale);
         }
-      } else {
-        await interaction.reply({
-          content: 'Please attach an image or link',
-          ephemeral: send
+        const buffer = await canvas.encode('png');
+        const output = new AttachmentBuilder(buffer, {
+          name: attachment.name
         });
+
+        if (attachment || url) {
+          if (width < scale) {
+            await interaction.reply({
+              files: [output],
+              content: "-# Try adding **crop: Stretch** if the flag looks weird",
+              ephemeral: send
+            });
+          } else {
+            await interaction.reply({ files: [output], ephemeral: send });
+          }
+        } else {
+          await interaction.reply({
+            content: "Please attach an image or link",
+            ephemeral: send
+          });
+        };
+      } catch (error) {
+        console.error("Error processing image:", error);
+        interaction.reply({content: "There was an error processing the image.", ephemeral: send});
       }
     }
   }
