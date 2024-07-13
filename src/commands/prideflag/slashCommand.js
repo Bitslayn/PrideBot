@@ -14,7 +14,6 @@ const {
   Message,
   MessageCollector
 } = require("discord.js");
-const CanvasAPI = require("@napi-rs/canvas");
 const { convertImageToFlag } = require("./shapes/flag");
 const { stretchImageAlongCurve } = require("./shapes/rainbow");
 
@@ -46,15 +45,15 @@ module.exports = {
               { name: "Stretch", value: "0full" }
             )
         )
-        .addStringOption((option) =>
-          option
-            .setName("shape")
-            .setDescription("Which shape should the flag be?")
-            .addChoices(
-              { name: "Flag (Default)", value: "flag" },
-              { name: "Rainbow", value: "rainbow" }
-            )
-        )
+        // .addStringOption((option) =>
+        //   option
+        //     .setName("shape")
+        //     .setDescription("Which shape should the flag be?")
+        //     .addChoices(
+        //       { name: "Flag (Default)", value: "flag" },
+        //       { name: "Rainbow", value: "rainbow" }
+        //     )
+        // )
         .addBooleanOption((option) =>
           option
             .setName("send")
@@ -72,41 +71,40 @@ module.exports = {
       const crop = interaction.options.getString("crop") ?? "-1";
       const scale = 512;
 
-      const shape = interaction.options.getString("shape");
+      const shape = interaction.options.getString("shape") ?? "flag";
       const send = !(interaction.options.getBoolean("send") ?? true);
-      
+
+      await interaction.deferReply({ ephemeral: send });
+
       try {
         let canvas;
-
         if (shape == "flag") {
-          canvas = convertImageToFlag(attachment.url, scale, crop);
+          canvas = await convertImageToFlag(attachment, scale, crop);
         } else if (shape == "rainbow") {
-          canvas = stretchImageAlongCurve(attachment.url, scale, scale);
+          canvas = await stretchImageAlongCurve(attachment.url, scale, scale);
         }
-        const buffer = await canvas.encode('png');
+
+        const buffer = await canvas.encode("png");
         const output = new AttachmentBuilder(buffer, {
           name: attachment.name
         });
 
         if (attachment || url) {
-          if (width < scale) {
-            await interaction.reply({
-              files: [output],
-              content: "-# Try adding **crop: Stretch** if the flag looks weird",
-              ephemeral: send
-            });
-          } else {
-            await interaction.reply({ files: [output], ephemeral: send });
+          {
+            await interaction.editReply({ files: [output], ephemeral: send });
           }
         } else {
-          await interaction.reply({
+          await interaction.editReply({
             content: "Please attach an image or link",
             ephemeral: send
           });
-        };
+        }
       } catch (error) {
         console.error("Error processing image:", error);
-        interaction.reply({content: "There was an error processing the image.", ephemeral: send});
+        interaction.editReply({
+          content: "There was an error processing the image.",
+          ephemeral: send
+        });
       }
     }
   }
