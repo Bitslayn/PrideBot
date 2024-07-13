@@ -91,7 +91,11 @@ module.exports = {
 
         if (attachment || url) {
           {
-            await interaction.editReply({ files: [output], ephemeral: send });
+            if (width < scale && shape == "flag") {
+              await interaction.editReply({ files: [output], content: '-# Try adding **crop: Stretch** if the flag looks weird', ephemeral: send })
+            } else {
+              await interaction.editReply({ files: [output], ephemeral: send });
+            }
           }
         } else {
           await interaction.editReply({
