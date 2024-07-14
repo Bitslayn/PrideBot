@@ -91,6 +91,15 @@ module.exports = {
 
         if (attachment || url) {
           {
+            const height = scale * 0.72265625;
+            function findWidth() { // width = 512
+              if (crop == "0full") {
+                return scale;
+              } else {
+                return (height * attachment.width) / attachment.height;
+              }
+            }
+            const width = findWidth();
             if (width < scale && shape == "flag") {
               await interaction.editReply({ files: [output], content: '-# Try adding **crop: Stretch** if the flag looks weird', ephemeral: send })
             } else {
