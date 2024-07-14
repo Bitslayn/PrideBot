@@ -2,7 +2,6 @@ const CanvasAPI = require("@napi-rs/canvas");
 
 async function convertImageToFlag(attachment, scale, crop) {
   const height = scale * 0.72265625; // height = 370
-  let width;
   function findWidth() { // width = 512
     if (crop == "0full") {
       return scale;
@@ -10,7 +9,7 @@ async function convertImageToFlag(attachment, scale, crop) {
       return (height * attachment.width) / attachment.height;
     }
   }
-  width = findWidth();
+  const width = findWidth();
 
   const dx = ((width - scale) / 2) * parseInt(crop);
   const dy = (scale - height) / 2;
