@@ -86,7 +86,7 @@ module.exports = {
 
         const buffer = await canvas.encode("png");
         const output = new AttachmentBuilder(buffer, {
-          name: attachment.name
+          name: attachment.name.replace(/\.[^/.]+$/, ".png")
         });
 
         if (attachment || url) {
