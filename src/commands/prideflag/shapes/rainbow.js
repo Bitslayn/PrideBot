@@ -1,18 +1,23 @@
 const { createCanvas, loadImage } = require("@napi-rs/canvas");
 const { parseSVG, makeAbsolute } = require("svg-path-parser");
 
-// Function to get points from SVG path
-function getPointsFromPath(d, viewBox, numPoints) {
+function getPointsFromPath(d, viewBox, numPoints, strokeWidth) {
   const commands = makeAbsolute(parseSVG(d));
   const points = [];
   let x = 0,
     y = 0;
 
+  console.log("SVG Commands:", commands);
+
   commands.forEach((command) => {
-    if (command.command === "M" || command.command === "L") {
+    console.log(`Processing command: ${command.code}`);
+
+    if (command.code === "M" || command.code === "L") {
       x = command.x;
       y = command.y;
-    } else if (command.command === "C") {
+      points.push({ x, y });
+      console.log(`Added point: (${x}, ${y})`);
+    } else if (command.code === "C") {
       for (let t = 0; t <= 1; t += 1 / numPoints) {
         const xt =
           (1 - t) * (1 - t) * (1 - t) * x +
@@ -25,13 +30,35 @@ function getPointsFromPath(d, viewBox, numPoints) {
           3 * (1 - t) * t * t * command.y2 +
           t * t * t * command.y;
         points.push({ x: xt, y: yt });
+        console.log(`Generated point: (${xt}, ${yt})`);
       }
       x = command.x;
       y = command.y;
     }
   });
 
-  return points;
+  console.log("Initial Path Points:", points);
+
+  const expandedPoints = [];
+  points.forEach((point) => {
+    for (
+      let offsetX = -strokeWidth / 2;
+      offsetX <= strokeWidth / 2;
+      offsetX++
+    ) {
+      for (
+        let offsetY = -strokeWidth / 2;
+        offsetY <= strokeWidth / 2;
+        offsetY++
+      ) {
+        expandedPoints.push({ x: point.x + offsetX, y: point.y + offsetY });
+      }
+    }
+  });
+
+  console.log("Expanded Path Points:", expandedPoints);
+
+  return expandedPoints;
 }
 
 async function stretchImageAlongCurve(attachment, scale) {
@@ -40,34 +67,43 @@ async function stretchImageAlongCurve(attachment, scale) {
   const ctx = canvas.getContext("2d");
 
   const viewBox = { x: 0, y: 0, width: 36, height: 36 };
-  const svgPath = "M 36.00,-0.00 C 16.12,-0.00 -0.00,16.12 -0.00,36.00 -0.00,36.00 18.04,36.00 18.04,36.00 18.04,26.08 26.08,18.04 36.00,18.04 36.00,18.04 36.00,-0.00 36.00,-0.00 Z";
-  const numPoints = scale; // Adjust based on desired resolution
-  const pathPoints = getPointsFromPath(svgPath, viewBox, numPoints);
+  const svgPath = "M 9.08 36 C 9.08 21.12 21.13 9.07 36 9.04";
+  const strokeWidth = 18;
+  const numPoints = attachment.height; // Adjust this for better resolution
+  const pathPoints = getPointsFromPath(
+    svgPath,
+    viewBox,
+    numPoints,
+    strokeWidth
+  );
 
-  // Draw the image to an offscreen canvas
+  console.log(`Image Dimensions: ${attachment.width}x${attachment.height}`);
+  console.log(`Path Points: ${pathPoints.length}`);
+
   const offscreenCanvas = createCanvas(attachment.width, attachment.height);
   const offscreenCtx = offscreenCanvas.getContext("2d");
   offscreenCtx.drawImage(img, 0, 0);
 
-  // Get image data
-  const imgData = offscreenCtx.getImageData(0, 0, attachment.width, attachment.height);
+  const imgData = offscreenCtx.getImageData(
+    0,
+    0,
+    attachment.width,
+    attachment.height
+  );
 
-  // Debug log: Image dimensions
-  console.log(`Image Dimensions: ${attachment.width}x${attachment.height}`);
-  console.log(`Canvas Dimensions: ${scale}x${scale}`)
-  console.log(`Path Points: ${pathPoints.length}`);
-
-  // Map image data to the path
   for (let i = 0; i < pathPoints.length; i++) {
     const point = pathPoints[i];
-    const srcX = Math.floor(i * (attachment.width / numPoints));
-    const srcY = Math.floor(
-      (point.y - viewBox.y) * (attachment.height / viewBox.height)
-    );
+    const srcX = Math.floor((i / pathPoints.length) * attachment.width);
+    const srcY = Math.floor(attachment.height / 2); // Middle of the image to create a stretch effect
 
-    // Debug log: Source coordinates and pixel index
-    console.log(`Src (x, y): (${srcX}, ${srcY})`);
-    console.log(`Pixel Index: ${srcY * attachment.width + srcX}`);
+    if (
+      srcX < 0 ||
+      srcX >= attachment.width ||
+      srcY < 0 ||
+      srcY >= attachment.height
+    ) {
+      continue;
+    }
 
     const pixelIndex = (srcY * attachment.width + srcX) * 4;
     const r = imgData.data[pixelIndex];
@@ -75,14 +111,12 @@ async function stretchImageAlongCurve(attachment, scale) {
     const b = imgData.data[pixelIndex + 2];
     const a = imgData.data[pixelIndex + 3];
 
-    // Debug log: Pixel color values
-    console.log(`Pixel Color: rgba(${r},${g},${b},${a / 255})`);
+    const destX = Math.floor((point.x - viewBox.x) * (scale / viewBox.width));
+    const destY = Math.floor((point.y - viewBox.y) * (scale / viewBox.height));
 
-    const destX = Math.floor((point.x - viewBox.x) * (width / viewBox.width));
-    const destY = Math.floor((point.y - viewBox.y) * (height / viewBox.height));
-
-    // Debug log: Destination coordinates
-    console.log(`Dest (x, y): (${destX}, ${destY})`);
+    if (destX < 0 || destX >= scale || destY < 0 || destY >= scale) {
+      continue;
+    }
 
     ctx.fillStyle = `rgba(${r},${g},${b},${a / 255})`;
     ctx.fillRect(destX, destY, 1, 1);

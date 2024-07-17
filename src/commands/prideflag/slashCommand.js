@@ -45,15 +45,15 @@ module.exports = {
               { name: "Stretch", value: "0full" }
             )
         )
-        .addStringOption((option) =>
-          option
-            .setName("shape")
-            .setDescription("Which shape should the flag be?")
-            .addChoices(
-              { name: "Flag (Default)", value: "flag" },
-              { name: "Rainbow", value: "rainbow" }
-            )
-        )
+        // .addStringOption((option) =>
+        //   option
+        //     .setName("shape")
+        //     .setDescription("Which shape should the flag be?")
+        //     .addChoices(
+        //       { name: "Flag (Default)", value: "flag" },
+        //       { name: "Rainbow", value: "rainbow" }
+        //     )
+        // )
         .addBooleanOption((option) =>
           option
             .setName("send")
