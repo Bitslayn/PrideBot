@@ -1,49 +1,91 @@
 const { createCanvas, loadImage } = require("@napi-rs/canvas");
+const { parseSVG, makeAbsolute } = require("svg-path-parser");
 
-function mapToCurve(x, y, width, height) {
-  const angle = (x / width) * Math.PI * 2;
-  const radius = height / 2;
-  const centerX = width / 2;
-  const centerY = height / 2;
+// Function to get points from SVG path
+function getPointsFromPath(d, viewBox, numPoints) {
+  const commands = makeAbsolute(parseSVG(d));
+  const points = [];
+  let x = 0,
+    y = 0;
 
-  const curvedX = centerX + radius * Math.cos(angle);
-  const curvedY = centerY + radius * Math.sin(angle) - y; // Adjust for y-axis
+  commands.forEach((command) => {
+    if (command.command === "M" || command.command === "L") {
+      x = command.x;
+      y = command.y;
+    } else if (command.command === "C") {
+      for (let t = 0; t <= 1; t += 1 / numPoints) {
+        const xt =
+          (1 - t) * (1 - t) * (1 - t) * x +
+          3 * (1 - t) * (1 - t) * t * command.x1 +
+          3 * (1 - t) * t * t * command.x2 +
+          t * t * t * command.x;
+        const yt =
+          (1 - t) * (1 - t) * (1 - t) * y +
+          3 * (1 - t) * (1 - t) * t * command.y1 +
+          3 * (1 - t) * t * t * command.y2 +
+          t * t * t * command.y;
+        points.push({ x: xt, y: yt });
+      }
+      x = command.x;
+      y = command.y;
+    }
+  });
 
-  return { x: curvedX, y: curvedY };
+  return points;
 }
 
-async function stretchImageAlongCurve(imageUrl, width, height) {
-  const img = await loadImage(imageUrl);
-  const canvas = createCanvas(width, height);
+async function stretchImageAlongCurve(attachment, scale) {
+  const img = await loadImage(attachment.url);
+  const canvas = createCanvas(scale, scale);
   const ctx = canvas.getContext("2d");
 
+  const viewBox = { x: 0, y: 0, width: 36, height: 36 };
+  const svgPath = "M 36.00,-0.00 C 16.12,-0.00 -0.00,16.12 -0.00,36.00 -0.00,36.00 18.04,36.00 18.04,36.00 18.04,26.08 26.08,18.04 36.00,18.04 36.00,18.04 36.00,-0.00 36.00,-0.00 Z";
+  const numPoints = scale; // Adjust based on desired resolution
+  const pathPoints = getPointsFromPath(svgPath, viewBox, numPoints);
+
   // Draw the image to an offscreen canvas
-  const offscreenCanvas = createCanvas(img.width, img.height);
+  const offscreenCanvas = createCanvas(attachment.width, attachment.height);
   const offscreenCtx = offscreenCanvas.getContext("2d");
   offscreenCtx.drawImage(img, 0, 0);
 
   // Get image data
-  const imgData = offscreenCtx.getImageData(0, 0, img.width, img.height);
+  const imgData = offscreenCtx.getImageData(0, 0, attachment.width, attachment.height);
 
-  // Draw the transformed image
-  for (let y = 0; y < img.height; y++) {
-    for (let x = 0; x < img.width; x++) {
-      const pixelIndex = (y * img.width + x) * 4;
-      const r = imgData.data[pixelIndex];
-      const g = imgData.data[pixelIndex + 1];
-      const b = imgData.data[pixelIndex + 2];
-      const a = imgData.data[pixelIndex + 3];
+  // Debug log: Image dimensions
+  console.log(`Image Dimensions: ${attachment.width}x${attachment.height}`);
+  console.log(`Canvas Dimensions: ${scale}x${scale}`)
+  console.log(`Path Points: ${pathPoints.length}`);
 
-      const { x: curvedX, y: curvedY } = mapToCurve(
-        x,
-        y,
-        img.width,
-        img.height
-      );
+  // Map image data to the path
+  for (let i = 0; i < pathPoints.length; i++) {
+    const point = pathPoints[i];
+    const srcX = Math.floor(i * (attachment.width / numPoints));
+    const srcY = Math.floor(
+      (point.y - viewBox.y) * (attachment.height / viewBox.height)
+    );
 
-      ctx.fillStyle = `rgba(${r},${g},${b},${a / 255})`;
-      ctx.fillRect(curvedX, curvedY, 1, 1);
-    }
+    // Debug log: Source coordinates and pixel index
+    console.log(`Src (x, y): (${srcX}, ${srcY})`);
+    console.log(`Pixel Index: ${srcY * attachment.width + srcX}`);
+
+    const pixelIndex = (srcY * attachment.width + srcX) * 4;
+    const r = imgData.data[pixelIndex];
+    const g = imgData.data[pixelIndex + 1];
+    const b = imgData.data[pixelIndex + 2];
+    const a = imgData.data[pixelIndex + 3];
+
+    // Debug log: Pixel color values
+    console.log(`Pixel Color: rgba(${r},${g},${b},${a / 255})`);
+
+    const destX = Math.floor((point.x - viewBox.x) * (width / viewBox.width));
+    const destY = Math.floor((point.y - viewBox.y) * (height / viewBox.height));
+
+    // Debug log: Destination coordinates
+    console.log(`Dest (x, y): (${destX}, ${destY})`);
+
+    ctx.fillStyle = `rgba(${r},${g},${b},${a / 255})`;
+    ctx.fillRect(destX, destY, 1, 1);
   }
 
   return canvas;
